@@ -17,7 +17,7 @@ Rails.application.routes.draw do
   root 'map#index'
 
   get 'about', to: 'about#index'
-  
+
   get 'findme', to: 'map#index'
 
   get 'admin', to: 'admin#index'
@@ -55,7 +55,7 @@ Rails.application.routes.draw do
   get 'map/routes'
 
   #This route run the parse for catch the data of buildings and rooms of matriculaweb page
-  #get 'parse', to: 'parser#index'
+  # get 'parser', to: 'parser#index'
 
   get 'map/datapoint'
   get 'map/point/:id', to: 'map#point'

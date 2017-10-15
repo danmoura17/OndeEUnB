@@ -1,7 +1,11 @@
 class ParserController < ApplicationController
   before_action :authenticate_admin!
   def index
-    render plain: schedules
+
+    result = DownloadDepartaments.call
+    puts result
+    render plain: "Parse"
+    #render plain: schedules
   end
 
   def geo_data
@@ -63,117 +67,8 @@ class ParserController < ApplicationController
     valid_room = room.present? && (room != 'Local a Designar') && classroom.present?
     valid_times && valid_room
   end
-
-  # Departments parser
-  def departments
-    require 'nokogiri'
-    require 'open-uri'
-    html = open('https://matriculaweb.unb.br/graduacao/oferta_dep.aspx?cod=1')
-    html_tree = Nokogiri::HTML(html, nil, Encoding::UTF_8.to_s)
-    departments_rows = html_tree.css('.FrameCinza tr')
-    departments_rows.shift # Remove the first department row
-    departments = []
-
-    departments_rows.each do |department_row|
-      acronym = department_row.at('td[2]').text
-      department = department_row.at('td[3] a')
-
-      # Adds the department only if its not in the exclude list.
-      unless exclude_departments.include? acronym
-        department_data = {
-          acronym: acronym,
-          title: department.text,
-          url: "https://matriculaweb.unb.br/graduacao/#{department['href']}"
-        }
-        puts department_data
-        departments.push(department_data)
-      end
-    end
-
-    departments
-  end
-
-  # Courses parser
-  def courses
-    require 'nokogiri'
-    require 'open-uri'
-
-    courses = []
-    departments.each do |department|
-      html = open(department[:url])
-      html_tree = Nokogiri::HTML(html, nil, Encoding::UTF_8.to_s)
-
-      courses_rows = html_tree.css('.FrameCinza tr')
-
-      # Ignore the first course row
-      courses_rows.shift
-
-      # Getting courses data
-      courses_rows.each do |courses_row|
-        course = courses_row.at('td[2] a')
-        course_data = {
-          department: department,
-          title: course.text,
-          url: "https://matriculaweb.unb.br/graduacao/#{course['href']}"
-        }
-
-        puts course_data
-        # puts in the courses list course_data
-        courses.push(course_data)
-      end
-    end
-
-    courses
-  end
-
   # Data parser
-  def schedules
-    require 'nokogiri'
-    require 'open-uri'
 
-    courses.each do |course|
-      html = open(course[:url])
-      html_tree = Nokogiri::HTML(html, nil, Encoding::UTF_8.to_s)
-      schedules_rows = html_tree.css('.framecinza tr')
-
-      # Getting the time and places of courses
-      schedules_rows.each do |schedule_row|
-        if schedule_row.content.include? 'Total'
-          classroom = schedule_row.at_css('td[1] b')
-          schedule_row.css('td[4] div').each do |schedule|
-            day_of_week = schedule.at_css('b')
-            start_time = schedule.at_css('font[color="black"] b')
-            end_time = schedule.at_css('font[color="brown"]')
-            room = schedule.at_css('i')
-
-            if valid_schedule_and_room?(day_of_week, start_time, end_time, room, classroom)
-              room = clean_room_name(room.text.strip)
-
-              building = replace_building_name(room.split.first).strip
-
-              if allowed_buildings.include? building
-
-                schedule_data = {
-                  course: course,
-                  day_of_week: set_day_of_week(day_of_week.text),
-                  start_time: start_time.text,
-                  end_time: end_time.text,
-                  building: building,
-                  room: room,
-                  room_type: define_room_type(room),
-                  classroom: classroom.text
-                }
-
-                puts schedule_data
-                create_schedule(schedule_data)
-
-              end
-            end
-          end
-        end
-      end
-    end
- end
 
   def create_schedule(params)
     room = create_room(params)
