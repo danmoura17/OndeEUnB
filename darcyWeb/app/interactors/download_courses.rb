@@ -9,8 +9,11 @@ class DownloadCourses
     uri = open(department.url)
     html = Nokogiri::HTML(uri, nil, Encoding::UTF_8.to_s)
 
-    courses_rows = html.css('tbody tr')
-    puts courses_rows.length
+    # get the third table of the page
+    courses_rows = html.css('table#datatable tr')
+
+    # skip table header
+    courses_rows.shift
 
     # Getting courses data
     courses_rows.each do |course_row|
@@ -19,14 +22,11 @@ class DownloadCourses
       url = "https://matriculaweb.unb.br/graduacao/#{course_data['href']}"
 
       course = {
-        department: department,
         title: title,
         url: url
       }
-      puts course
+
       DownloadSchedulesJob.perform_later course
-      # puts in the courses list course_data
-      #courses.push(course_data)
     end
   end
 end
