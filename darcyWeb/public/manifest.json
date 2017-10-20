@@ -1,0 +1,9 @@
+{
+	"short_name" : "OndeE",
+	"name": "Onde É? UnB",
+	"icons" : [
+		{"src": "/logo.png", "sizes" : "192x192", "type": "image/png"}
+	], 
+	"start_url": ".",
+	"display": "standalone"
+}
